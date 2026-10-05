@@ -1,0 +1,17 @@
+[project]
+name = "project-1"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "bm25>=0.3.12",
+    "docling>=2.133.0",
+    "faiss-cpu>=1.15.1",
+    "fastapi>=0.142.2",
+    "pydantic>=2.13.5",
+    "pymupdf>=1.28.2",
+    "python-dotenv>=1.2.4",
+    "sentence-transformers>=6.1.0",
+    "uvicorn>=0.54.0",
+]
