@@ -23,7 +23,7 @@ RESULTS = "eval/results"
 OUT = os.path.join(RESULTS, "plots")
 KS = (1, 5, 10)
 # preferred display order; unknown configs go at the end
-ORDER = ["pymupdf", "docling", "hybrid", "rerank"]
+ORDER = ["pymupdf", "docling", "docling_bm25", "docling_hybrid", "pymupdf_hybrid"]
 
 
 def load_summaries():
