@@ -2570,6 +2570,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "bm25" },
+    { name = "bm25s" },
     { name = "docling" },
     { name = "faiss-cpu" },
     { name = "fastapi" },
@@ -2577,6 +2578,7 @@ dependencies = [
     { name = "openai" },
     { name = "pydantic" },
     { name = "pymupdf" },
+    { name = "pystemmer" },
     { name = "python-dotenv" },
     { name = "sentence-transformers" },
     { name = "uvicorn" },
@@ -2585,6 +2587,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "bm25", specifier = ">=0.3.12" },
+    { name = "bm25s", specifier = ">=0.3.12" },
     { name = "docling", specifier = ">=2.133.0" },
     { name = "faiss-cpu", specifier = ">=1.15.1" },
     { name = "fastapi", specifier = ">=0.142.2" },
@@ -2592,6 +2595,7 @@ requires-dist = [
     { name = "openai", specifier = ">=3.24.0" },
     { name = "pydantic", specifier = ">=2.13.5" },
     { name = "pymupdf", specifier = ">=1.28.2" },
+    { name = "pystemmer", specifier = ">=3.1.0" },
     { name = "python-dotenv", specifier = ">=1.2.4" },
     { name = "sentence-transformers", specifier = ">=6.1.0" },
     { name = "uvicorn", specifier = ">=0.54.0" },
