@@ -1,6 +1,7 @@
 {
   "config": "pymupdf",
   "index": "data/index/pymupdf",
+  "mode": "dense",
   "questions": "eval/questions.jsonl",
   "overall": {
     "n": 33,
