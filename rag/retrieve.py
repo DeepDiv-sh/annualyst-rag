@@ -8,7 +8,7 @@ from sentence_transformers import SentenceTransformer
 
 ROOT = Path(__file__).resolve().parent.parent
 
-QUERY_INSTRUCTION = "Retrieve this sentence for searching relevant passages: "
+QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: "
 
 def resolve(p):
     path = Path(p)
