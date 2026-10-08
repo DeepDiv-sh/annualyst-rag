@@ -24,9 +24,9 @@ def chunk_text(text, size, overlap):
             cut = text.rfind(" ", start, end)
             if cut > start + size//2:
                 end = cut
-            chunk = text[start:end].strip()
-            if chunk:
-                chunks.append(chunk)
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
         if end >= n:
             break
         
