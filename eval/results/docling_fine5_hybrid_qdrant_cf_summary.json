@@ -1,0 +1,76 @@
+{
+  "config": "docling_fine5_hybrid_qdrant_cf",
+  "index": "data/index/docling_fine5",
+  "mode": "hybrid",
+  "store": "qdrant",
+  "company_filter": {
+    "detected": 29,
+    "exact_match": 29,
+    "wrong": 0,
+    "n": 33
+  },
+  "rerank": null,
+  "questions": "eval/questions.jsonl",
+  "overall": {
+    "n": 33,
+    "recall@1": 0.6060606060606061,
+    "recall@5": 0.8484848484848485,
+    "recall@10": 0.8787878787878788,
+    "mrr@10": 0.7154882154882155
+  },
+  "by_type": {
+    "table": {
+      "n": 10,
+      "recall@1": 0.4,
+      "recall@5": 0.7,
+      "recall@10": 0.8,
+      "mrr@10": 0.5277777777777778
+    },
+    "prose": {
+      "n": 9,
+      "recall@1": 0.6666666666666666,
+      "recall@5": 0.7777777777777778,
+      "recall@10": 0.7777777777777778,
+      "mrr@10": 0.7222222222222222
+    },
+    "brsr": {
+      "n": 6,
+      "recall@1": 0.5,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr@10": 0.7222222222222222
+    },
+    "multi-column": {
+      "n": 8,
+      "recall@1": 0.875,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr@10": 0.9375
+    }
+  },
+  "by_company": {
+    "asianpaints": {
+      "n": 6,
+      "recall@1": 0.5,
+      "recall@5": 0.8333333333333334,
+      "recall@10": 1.0,
+      "mrr@10": 0.6851851851851851
+    },
+    "eternal": {
+      "n": 12,
+      "recall@1": 0.5833333333333334,
+      "recall@5": 0.8333333333333334,
+      "recall@10": 0.8333333333333334,
+      "mrr@10": 0.6805555555555557
+    },
+    "hdfcbank": {
+      "n": 15,
+      "recall@1": 0.6666666666666666,
+      "recall@5": 0.8666666666666667,
+      "recall@10": 0.8666666666666667,
+      "mrr@10": 0.7555555555555554
+    }
+  },
+  "seconds_total": 0.3,
+  "seconds_per_question": 0.008
+}
