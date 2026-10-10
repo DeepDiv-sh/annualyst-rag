@@ -40,6 +40,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--index", required=True)
     ap.add_argument("--mode", choices=["dense", "bm25", "hybrid"], default="dense")
+    ap.add_argument("--store", choices=["faiss", "qdrant"], default="faiss",
+                    help="where the dense vectors are searched (Fin-E5 indexes only for qdrant)")
+    ap.add_argument("--company-filter", action="store_true",
+                    help="detect the company in the question and search only its chunks (needs qdrant)")
     ap.add_argument("--rerank", default=None,
                     help="cross-encoder to rerank with: minilm | bge (default: no reranking)")
     ap.add_argument("--rerank-depth", type=int, default=30,
@@ -49,14 +53,21 @@ def main():
     args = ap.parse_args()
     base = os.path.basename(os.path.normpath(args.index))
     name = args.name or (base if args.mode == "dense" else f"{base}_{args.mode}")
-    if args.rerank and not args.name:
-        name += f"_rerank_{args.rerank}"
+    if not args.name:
+        if args.store == "qdrant":
+            name += "_qdrant"
+        if args.company_filter:
+            name += "_cf"
+        if args.rerank:
+            name += f"_rerank_{args.rerank}"
 
     questions = load_jsonl(args.questions)
     answerable = [q for q in questions if q.get("gold_pages")]
     print(f"[eval] config={name}  {len(answerable)} answerable / {len(questions)} questions")
 
-    retriever = make_retriever(args.mode, args.index)
+    retriever = make_retriever(args.mode, args.index, store=args.store,
+                               company_filter=args.company_filter)
+    base_retriever = retriever
     if args.rerank:
         from rag.rerank import RerankedRetriever, Reranker
         retriever = RerankedRetriever(retriever, Reranker(args.rerank), depth=args.rerank_depth)
@@ -102,6 +113,20 @@ def main():
     else:
         print(f"\nTIMING: {extra['seconds_per_question']}s per question (batched)")
 
+    # Company filter diagnostics: detection uses only the question text; the eval's
+    # "company" field is used here only to check whether the detection was right.
+    if args.company_filter:
+        filters = base_retriever.last_filters
+        detected = sum(bool(f) for f in filters)
+        correct = sum(f == {q["company"]} for q, f in zip(answerable, filters))
+        wrong = [(q["id"], sorted(f)) for q, f in zip(answerable, filters)
+                 if f and q["company"] not in f]
+        extra["company_filter"] = {"detected": detected, "exact_match": correct,
+                                   "wrong": len(wrong), "n": len(answerable)}
+        print(f"COMPANY FILTER: detected in {detected}/{len(answerable)} questions | "
+              f"exactly right {correct} | wrong {len(wrong)}"
+              + (f" -> {wrong}" if wrong else ""))
+
     misses = [r for r in rows if r["hit_rank"] is None or r["hit_rank"] > 5]
     print(f"\nMISSES @5 ({len(misses)}):")
     for r in misses:
@@ -114,6 +139,7 @@ def main():
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     with open(f"eval/results/{name}_summary.json", "w", encoding="utf-8") as f:
         json.dump({"config": name, "index": args.index, "mode": args.mode,
+                   "store": args.store, "company_filter": args.company_filter,
                    "rerank": args.rerank, "questions": args.questions, "overall": overall,
                    "by_type": {t: summarize(r) for t, r in by_type.items()},
                    "by_company": {c: summarize(r) for c, r in by_company.items()},
