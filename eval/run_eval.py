@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -39,18 +40,30 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--index", required=True)
     ap.add_argument("--mode", choices=["dense", "bm25", "hybrid"], default="dense")
+    ap.add_argument("--rerank", default=None,
+                    help="cross-encoder to rerank with: minilm | bge (default: no reranking)")
+    ap.add_argument("--rerank-depth", type=int, default=30,
+                    help="how many retriever candidates the reranker sees")
     ap.add_argument("--questions", default="eval/questions.jsonl")
     ap.add_argument("--name", default=None)
     args = ap.parse_args()
     base = os.path.basename(os.path.normpath(args.index))
     name = args.name or (base if args.mode == "dense" else f"{base}_{args.mode}")
+    if args.rerank and not args.name:
+        name += f"_rerank_{args.rerank}"
 
     questions = load_jsonl(args.questions)
     answerable = [q for q in questions if q.get("gold_pages")]
     print(f"[eval] config={name}  {len(answerable)} answerable / {len(questions)} questions")
 
     retriever = make_retriever(args.mode, args.index)
+    if args.rerank:
+        from rag.rerank import RerankedRetriever, Reranker
+        retriever = RerankedRetriever(retriever, Reranker(args.rerank), depth=args.rerank_depth)
+
+    t0 = time.perf_counter()
     all_results = retriever.search_batch([q["question"] for q in answerable], MAX_K)
+    total_s = time.perf_counter() - t0
 
     rows, ranks = [], []
     by_type, by_company = defaultdict(list), defaultdict(list)
@@ -71,6 +84,24 @@ def main():
     print_table("BY TYPE", {t: summarize(r) for t, r in sorted(by_type.items())})
     print_table("BY COMPANY", {c: summarize(r) for c, r in sorted(by_company.items())})
 
+    # Reranker ceiling: a reranker can only reorder what stage 1 found.
+    extra = {"seconds_total": round(total_s, 1),
+             "seconds_per_question": round(total_s / max(len(answerable), 1), 3)}
+    if args.rerank:
+        in_cands = [first_hit_rank(c, q["company"], {int(p) for p in q["gold_pages"]}) is not None
+                    for q, c in zip(answerable, retriever.last_candidates)]
+        extra["rerank_model"] = args.rerank
+        extra["rerank_depth"] = args.rerank_depth
+        extra[f"candidate_recall@{args.rerank_depth}"] = round(sum(in_cands) / len(in_cands), 3)
+        extra.update(retriever.timing)
+        print(f"\nRERANK CEILING: gold page in top-{args.rerank_depth} candidates for "
+              f"{sum(in_cands)}/{len(in_cands)} questions "
+              f"({extra[f'candidate_recall@{args.rerank_depth}']:.2f})")
+        print(f"TIMING (avg per question): retrieve {retriever.timing['retrieve_s_per_q']}s | "
+              f"rerank {retriever.timing['rerank_s_per_q']}s")
+    else:
+        print(f"\nTIMING: {extra['seconds_per_question']}s per question (batched)")
+
     misses = [r for r in rows if r["hit_rank"] is None or r["hit_rank"] > 5]
     print(f"\nMISSES @5 ({len(misses)}):")
     for r in misses:
@@ -83,9 +114,10 @@ def main():
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     with open(f"eval/results/{name}_summary.json", "w", encoding="utf-8") as f:
         json.dump({"config": name, "index": args.index, "mode": args.mode,
-                   "questions": args.questions, "overall": overall,
+                   "rerank": args.rerank, "questions": args.questions, "overall": overall,
                    "by_type": {t: summarize(r) for t, r in by_type.items()},
-                   "by_company": {c: summarize(r) for c, r in by_company.items()}}, f, indent=2)
+                   "by_company": {c: summarize(r) for c, r in by_company.items()},
+                   **extra}, f, indent=2)
     print(f"\n[eval] saved eval/results/{name}.jsonl and {name}_summary.json")
 
 
